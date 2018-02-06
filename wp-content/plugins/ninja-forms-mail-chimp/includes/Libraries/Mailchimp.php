@@ -204,7 +204,7 @@ class Mailchimp {
         $this->log('Call to ' . $this->root . $url . '.json: ' . $params);
         if($this->debug) {
             $curl_buffer = fopen('php://memory', 'w+');
-            curl_setopt($ch, CURLOPT_STDERR, $curl_buffer);
+//            curl_setopt($ch, CURLOPT_STDERR, $curl_buffer);
         }
 
         $response_body = curl_exec($ch);

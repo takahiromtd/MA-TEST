@@ -13,7 +13,8 @@ return apply_filters( 'nf_mail_chimp_action_mail_chimp_settings', array(
         'type' => 'toggle',
         'label' => __( 'Require subscribers to confirm their subscription', 'ninja-forms-mail-chimp' ),
         'group' => 'advanced',
-        'width' => 'full'
+        'width' => 'full',
+	    'value' => 0
     ),
 
 ));

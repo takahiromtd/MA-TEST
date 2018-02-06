@@ -1,9 +1,16 @@
 <?php if ( ! defined( 'ABSPATH' ) ) exit;
 
+/**
+ * Class NF_MailChimp_Admin_Metaboxes_Submission
+ */
 final class NF_MailChimp_Admin_Metaboxes_Submission extends NF_Abstracts_SubmissionMetabox
 {
+    /**
+     * NF_MailChimp_Admin_Metaboxes_Submission constructor.
+     */
     public function __construct()
     {
+
         parent::__construct();
 
         $this->_title = __( 'MailChimp Subscription', 'ninja-forms' );

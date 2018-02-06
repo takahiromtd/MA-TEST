@@ -49,71 +49,188 @@ final class NF_MailChimp_Actions_MailChimp extends NF_Abstracts_ActionNewsletter
 
     }
 
+    /**
+     * Process
+     * Action processing for the Mailchimp add-on.
+     *
+     * @param $action_settings - An array of settings populated by the user in the Mailchimp action.
+     * @param $form_id - The ID of the form the action is present on.
+     * @param $data - An array of all of the form data.
+     *
+     * @return mixed $data - All the data we merge back in to the form data array.
+     */
     public function process( $action_settings, $form_id, $data )
     {
+        // If no opt in data found return.
         if( ! $this->is_opt_in( $data ) ) return $data;
 
+        // Set our Newsletter List.
         $list = $action_settings[ 'newsletter_list' ];
-        $double_opt_in = $action_settings[ 'double_opt_in' ];
 
-        $merge_vars = $this->get_merge_vars( $action_settings, $list );
+        // Get our Merge Fields.
+        $merge_fields = $this->get_merge_fields( $action_settings, $list );
 
-        $data[ 'actions' ][ 'mailchimp' ][ 'list' ] = $list;
-        $data[ 'actions' ][ 'mailchimp' ][ 'settings' ] = $action_settings;
-        $data[ 'actions' ][ 'mailchimp' ][ 'merge_vars' ] = $merge_vars;
+        // Pull of the email address from the fields.
+        $email_address = array_shift( $merge_fields );
 
-        $response = NF_MailChimp()->subscribe( $list, $merge_vars, $double_opt_in );
+        // Get our interest categories.
+        $interest_categories = $this->get_interest_categories( $action_settings, $list );
 
-        if( $response && ! isset( $response[ 'error' ] ) ){
-            $data[ 'extra' ][ 'mailchimp_list' ] = $list;
-            $data[ 'extra' ][ 'mailchimp_euid' ]  = $response[ 'euid' ];
-            $data[ 'extra' ][ 'mailchimp_leid' ]  = $response[ 'leid' ];
-            $data[ 'extra' ][ 'mailchimp_email' ] = $response[ 'email' ];
-            $data[ 'extra' ][ 'mailchimp_merge_vars' ] = $merge_vars;
-        }
+        // Sign up our user.
+        $response = NF_MailChimp()->subscribe(
+        	$list,
+	        $merge_fields,
+	        $interest_categories,
+	        $email_address,
+	        $action_settings[ 'double_opt_in' ] );
 
+        // Merge the response data back into the form data.
         $data[ 'actions' ][ 'mailchimp' ][ 'subscribe' ] = $response;
 
         return $data;
     }
 
+    /**
+     * Is Opt In
+     * Loops over form data and to see if the form contains a Mailchimp opt in.
+     *
+     * @param $data - All form data
+     * @return bool
+     */
     protected function is_opt_in( $data )
     {
+        // Set true flag for later use.
         $opt_in = TRUE;
-        foreach( $data[ 'fields' ]as $field ){
 
+        // Loop over the fields from the form data and...
+        foreach( $data[ 'fields' ] as $field ){
+            // ...If the field type is equal to Mailchimp Opt continue.
             if( 'mailchimp-optin' != $field[ 'type' ] ) continue;
 
+            // ...If the field value is the field value is false change the optin flag to false.
             if( ! $field[ 'value' ] ) $opt_in = FALSE;
         }
         return $opt_in;
     }
 
-    protected function get_merge_vars( $action_settings, $list_id )
+    /**
+     * Get Merge Fields
+     * Breaks up @param $action_settings into merge fields to be sent to Mailchimp.
+     *
+     * @param $action_settings - The values of the settings mapped in the Mailchimp action settings.
+     * @param $list_id - The ID of the Mailchimp list.
+     * @return array $merge_fields - returns key/value you pair of merge_field
+     */
+    protected function get_merge_fields( $action_settings, $list_id )
     {
-        $merge_vars = array();
-        foreach( $action_settings as $key => $value ){
+        // Build the array to store our merge fields.
+        $merge_fields = array();
 
-            if( FALSE === strpos( $key, $list_id ) ) continue;
+        // Loop over our action_settings and break them into key/value pairs, then...
+        foreach( $action_settings as $key => $value ) {
 
+            // ...Check to see if the key contains the $list_id and continue on if it does not.
+            if ( FALSE === strpos( $key, $list_id ) ) continue;
+
+            // ...Remove the $list_id from the $key.
             $field = str_replace( $list_id . '_', '', $key );
 
-            if( FALSE !== strpos( $key, 'group_' ) ){
-
-                $key = str_replace( $list_id . '_group_', '', $key );
-
-                if( $value ) {
-                    $group = explode('_', $key);
-                    $merge_vars[ 'groupings' ][ $group[ 0 ] ][ 'id' ] = $group[ 0 ];
-                    $merge_vars[ 'groupings' ][ $group[ 0 ] ][ 'groups' ][] = $group[ 1 ];
-                }
-            } else {
-                $merge_vars[ $field ] = $value;
-            }
+            // ...Build our merge fields array.
+            $merge_fields[ $field ] = $value;
         }
-        return $merge_vars;
+        return $merge_fields;
     }
 
+    /**
+     * Get Interest Categories
+     * Breaks out the interest categories into a key/value pair
+     *
+     * @param $action_settings - Mailchimp's action settings.
+     * @param $list_id - The ID of the Mailchimp list the settings belong to.
+     *
+     * @return array $interest_categories - A key/value pair of the interest categories
+     *      $interest_categories[ 'interest_category_value' ] = 'boolean value'
+     */
+    protected function get_interest_categories( $action_settings, $list_id )
+    {
+        $interest_categories = array();
+        // Loop over our actions settings
+        foreach( $action_settings as $key => $value ) {
+            // If the key contains group_ then....
+            if ( FALSE !== strpos( $key, 'group_' ) ) {
+                // Remove group and the list id from the key and...
+                $key = str_replace( $list_id . '_group_', '', $key );
+
+                // Break the string apart into an array based on an underscore delimiter.
+                $key = explode( '_', $key );
+
+                // ...If it's not, convert it.
+                $key = $this->convert_interest_groups( $key, $list_id );
+
+                // If the value is set to 1, the key is not null, and the key is not empty then....
+                if( 1 == $value && null !== $key && ! empty( $key )  ) {
+                    // ...Build our new array with the Interest List(which is at the 0 position) and set the value to true.
+                    $interest_categories[ $key[ 0 ] ] = true;
+                } else {
+                    // Remove this reference of the array.
+                    unset( $key );
+                }
+            }
+        }
+        return $interest_categories;
+    }
+
+
+    /**
+     * Convert Interest Groups
+     * Converts interest groups from old API to Interest Categories.
+     *
+     * @param $group array - Group ID and Label
+     *      $group[ 0 ] = Group ID numeric string
+     *      $group[ 1 ] = Group Label sting
+     *
+     * @param $list_id alpha-numeric string - The ID for the list in Mailchimp
+     * @return array $categories - Sends back the updated Interest Categories ID.
+     */
+    private function convert_interest_groups( $group, $list_id )
+    {
+        // Grab the latest copy of the API data form our setting.
+        $interest_categories = Ninja_Forms()->get_setting( 'nf_mailchimp_categories_' . $list_id );
+
+        $categories = array();
+        foreach( $interest_categories as $category ) {
+            // Remove group and the list id from the key and...
+            $category[ 'value' ] = str_replace( $list_id . '_group_', '', $category[ 'value' ] );
+
+            // Break the string apart into an array based on an underscore delimiter.
+            $category = explode( '_', $category[ 'value' ] );
+
+            // Checks to see if the interest categories length is correct and...
+            if( strlen( $group[ 0 ] ) < 7 ) {
+                /*
+                 * The category label and group label are both at position 1 in the array.
+                 * If they both match, then we override the group ID, which is 0 with the
+                 * category ID.
+                 */
+                if ( $category[ 1 ] === $group[ 1 ] ) {
+                    $group[ 0 ] = $category[ 0 ];
+                }
+            }
+            // Compare our values to make sure they exist, if they do....
+            if( $category[ 0 ] === $group[ 0 ] ) {
+                // Append them to our categories array.
+                $categories[] = $group[ 0 ];
+            }
+        }
+        return $categories;
+    }
+
+    /**
+     * Get List
+     * Calls the get_list method in the main MailChimp file.
+     *
+     * @return array - see get_lists for return data.
+     */
     protected function get_lists()
     {
         return NF_MailChimp()->get_lists();

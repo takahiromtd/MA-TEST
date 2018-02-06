@@ -1,9 +1,9 @@
 === Ninja Forms - MailChimp ===
-Contributors: wpninjasllc, kbjohnson90, pippinsplugins
+Contributors: wpninjasllc, kbjohnson90, pippinsplugins, klhall1987
 Tags: form, forms, ninja forms, mailpoet, wysija, newsletters, email
 Requires at least: 4.7
 Tested up to: 4.9
-Stable tag: 3.0.5
+Stable tag: 3.1.0
 License: GPLv2 or later
 
 == Description ==
@@ -22,6 +22,12 @@ This section describes how to install the plugin.
 2. Activate the plugin through the 'Plugins' menu in WordPress
 
 == Changelog ==
+
+= 3.1.0 (5 February 2018) =
+
+* MailChimp API version has been updated to 3.0.
+* SSL Verify Peer setting is no longer necessary and has been removed.
+* MailChimp actions malfunctioning as a result of removing lists/groups from MailChimp can now be fixed by refreshing list data in the MailChimp action.
 
 = 3.0.5 (30 December 2017) =
 

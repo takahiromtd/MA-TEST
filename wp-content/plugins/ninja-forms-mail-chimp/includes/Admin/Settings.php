@@ -24,25 +24,23 @@ final class NF_MailChimp_Admin_Settings
         return $groups;
     }
 
+    /**
+     * Validate Ninja Forms MC API
+     * Makes a call to the Mailchimp API to ensure that our credentials are working.
+     *
+     * @param $setting
+     * @return mixed
+     */
     public function validate_ninja_forms_mc_api( $setting )
     {
-        $debug = defined( 'WP_DEBUG' ) && WP_DEBUG;
-        $api_key = trim( $setting[ 'value' ] );
-        $ssl_verifypeer = ( Ninja_Forms()->get_setting( 'ninja_forms_mc_disable_ssl_verify' ) ) ? false : true;
+        $mailchimp = new NF_MailChimp();
+        $response = $mailchimp->api_request( 'GET', '/lists/' );
 
-        $options = array(
-            'debug' => $debug,
-            'ssl_verifypeer' => $ssl_verifypeer,
-        );
-
-        try {
-            $mailchimp = new Mailchimp( $api_key, $options );
-            $mailchimp->call( 'lists/list', array( 'limit' => 1 ) );
-        } catch( Exception $e ) {
-            // TODO: Log Error, $e->getMessage(), for System Status Report
-            $setting[ 'errors' ][] = __( 'The MailChimp API key you have entered appears to be invalid.', 'ninja-forms-mail-chimp') . ' ' . $e->getMessage();
+        if( ! empty( $response ) && 200 == $response[ 'response' ][ 'code' ] ) {
+            return $setting;
+        } else {
+            $setting[ 'errors' ][] = __( 'The MailChimp API key you have entered appears to be invalid.', 'ninja-forms-mail-chimp');
         }
-
         return $setting;
     }
 

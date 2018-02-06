@@ -244,7 +244,7 @@ function ninja_forms_mc_subscribe_email( $subscriber = array(), $list_id = '', $
 
 function ninja_forms_mc_extension_setup_license() {
     if ( class_exists( 'NF_Extension_Updater' ) ) {
-        $NF_Extension_Updater = new NF_Extension_Updater( 'MailChimp', '3.0.5', 'Pippin Williamson', __FILE__, 'mailchimp' );
+        $NF_Extension_Updater = new NF_Extension_Updater( 'MailChimp', '3.1.0', 'Pippin Williamson', __FILE__, 'mailchimp' );
     }
 }
 add_action( 'admin_init', 'ninja_forms_mc_extension_setup_license' );

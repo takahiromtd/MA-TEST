@@ -17,18 +17,4 @@ return apply_filters( 'nf_mail_chimp_plugin_settings', array(
             '<a href="http://kb.mailchimp.com/accounts/management/about-api-keys" target="_blank">', '</a>'
         ),
     ),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Disable SSL Verification
-    |--------------------------------------------------------------------------
-    */
-
-    'ninja_forms_mc_disable_ssl_verify' => array(
-        'id'    => 'ninja_forms_mc_disable_ssl_verify',
-        'type'  => 'checkbox',
-        'label' => __( 'Disable SSL Verification', 'ninja-forms-mail-chimp' ),
-        'desc'  => __( 'If you receive an error about validating the SSL certificate, enable this option', 'ninja-forms-mail-chimp' )
-    ),
-
 ));
